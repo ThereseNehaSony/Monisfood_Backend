@@ -70,11 +70,16 @@ const bookingController ={
         
           if (paymentDetails) {
             const generatedSignature = crypto
-              .createHmac('sha256', process.env.RAZORPAY_KEY_ID) 
+              .createHmac('sha256',process.env.RAZORPAY_KEY_ID
+                
+              ) 
               .update(`${paymentDetails.razorpayOrderId}|${paymentDetails.razorpayPaymentId}`)
               .digest('hex');
+    console.log(generatedSignature,"gen",paymentDetails.razorpaySignature,"pp");
     
             if (generatedSignature !== paymentDetails.razorpaySignature) {
+             console.log('wrong');
+             
               return res.status(400).json({ message: 'Payment verification failed' });
             }
           }
@@ -111,23 +116,89 @@ const bookingController ={
       },
       getBookings: async (req, res) => {
         try {
-            const userId = '6731bd99d81af3e60c9e8178';
-    
-           
-            const bookings = await Booking.find({ userId: userId });
-    
-            if (!bookings || bookings.length === 0) {
-                return res.status(404).json({ message: 'No bookings found for this user.' });
-            }
-    
-            return res.status(200).json(bookings);
+          // Fetch userId from the authenticated user (assumed to be in req.user)
+          const userId = '6731bd99d81af3e60c9e8178';
+      
+          // Fetch all bookings for the user, populate any required fields if needed
+          const bookings = await Booking.find({ userId }).sort({ createdAt: -1 }); // Sorting by createdAt in descending order
+      
+          // If no bookings found, send a message
+          if (!bookings.length) {
+            return res.status(404).json({ message: 'No bookings found for this user' });
+          }
+      
+          // Return the bookings data as a response
+          res.status(200).json(bookings);
         } catch (error) {
-            console.error('Error fetching bookings:', error);
-            return res.status(500).json({ message: 'Server error. Failed to fetch bookings.' });
+          console.error(error);
+          res.status(500).json({ message: 'Server error, please try again later' });
         }
-    },
+      },
+    getAllBookings : async (req, res) => {
+      try {
+        const categorizedBookings = await Booking.aggregate([
+          {
+            $unwind: {
+              path: '$selectedItems.breakfast',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $unwind: {
+              path: '$selectedItems.lunch',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $unwind: {
+              path: '$selectedItems.snack',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $addFields: {
+              mealType: {
+                $cond: {
+                  if: { $ne: ['$selectedItems.breakfast', null] },
+                  then: 'Breakfast',
+                  else: {
+                    $cond: {
+                      if: { $ne: ['$selectedItems.lunch', null] },
+                      then: 'Lunch',
+                      else: 'Snack',
+                    },
+                  },
+                },
+              },
+              itemDetails: {
+                $ifNull: [
+                  '$selectedItems.breakfast',
+                  { $ifNull: ['$selectedItems.lunch', '$selectedItems.snack'] },
+                ],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: {
+                mealType: '$mealType',
+                date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+              },
+              bookings: { $push: '$$ROOT' },
+            },
+          },
+          {
+            $sort: { '_id.date': 1, '_id.mealType': 1 },
+          },
+        ]);
+    console.log(categorizedBookings);
     
-   
+        res.status(200).json({ categorizedBookings });
+      } catch (error) {
+        console.error('Error fetching categorized bookings:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+      }
+    },
      
 }
  

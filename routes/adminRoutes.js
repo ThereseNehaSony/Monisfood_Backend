@@ -9,6 +9,8 @@ const {
   getDailyMenu,
   editMenuItem,
   deleteMenuItem,
+  addWeeklyMenu,
+  getWeeklyMenu,
 } = require('../controllers/menuController');
 const { generatePDF } = require('../util/generatePDF'); 
 const adminController = require('../controllers/adminController')
@@ -20,6 +22,8 @@ router.post('/daily-menu', addDailyMenu);
 router.get('/daily-menu/:date', getDailyMenu);
 router.put('/menu-item/:id', editMenuItem);
 router.delete('/menu-item/:id', deleteMenuItem);
+router.post('/weekly-menu', addWeeklyMenu);
+router.get('/weekly-menu', getWeeklyMenu); 
 
 router.get('/users',adminController.getUsers )
 router.put('/students/:id',adminController.editStudent)
@@ -30,6 +34,7 @@ router.post('/schools',adminController.addSchool)
 router.get('/schools',adminController.getSchools)
 router.get("/coupons", adminController.getAllCoupons);
 router.post('/coupons/validate',adminController.validateCoupon)
+
 
 
 router.post("/coupons", adminController.addCoupon);
