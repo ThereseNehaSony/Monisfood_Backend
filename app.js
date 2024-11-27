@@ -6,21 +6,22 @@ const logger = require("morgan");
 const mongoose = require("mongoose");
 const app = express();
 
-// Remove all CORS restrictions
+// Enable preflight requests for all routes
+app.options('*', cors());
+
 app.use(cors({
   origin: '*',
-  methods: '*',
-  allowedHeaders: '*',
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
-// Add headers to all responses
+// Global middleware to handle preflight
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', '*');
-  res.header('Access-Control-Allow-Headers', '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
