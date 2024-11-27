@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
-const cors = require("cors"); 
+const cors = require("cors");
 const logger = require("morgan");
 const mongoose = require("mongoose");
 
@@ -10,23 +10,10 @@ const app = express();
 // CORS setup
 const corsOptions = {
   credentials: true,
-  origin: [process.env.CLIENT_URL],
+  origin: [process.env.CLIENT_URL, process.env.CLIENT_URL_2],
   methods: "GET, HEAD, PUT, PATCH, POST, DELETE",
 };
 app.use(cors(corsOptions));
-
-// Global middleware to handle preflight
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -41,6 +28,20 @@ const adminRoutes = require("./routes/adminRoutes");
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
+
+//not found handler
+app.use("*", (req, res, next) => {
+  res.status(404).json({ message: "API not found" });
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
+});
 
 mongoose
   .connect(process.env.MONGO_URI)
