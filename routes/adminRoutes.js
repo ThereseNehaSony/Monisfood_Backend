@@ -13,7 +13,8 @@ const {
   getWeeklyMenu,
 } = require('../controllers/menuController');
 const { generatePDF } = require('../util/generatePDF'); 
-const adminController = require('../controllers/adminController')
+const adminController = require('../controllers/adminController');
+const bookingController = require('../controllers/bookingController');
 const router = express.Router();
 
 router.post('/menu-item', addMenuItem);
@@ -35,7 +36,7 @@ router.get('/schools',adminController.getSchools)
 router.get("/coupons", adminController.getAllCoupons);
 router.post('/coupons/validate',adminController.validateCoupon)
 
-
+router.get('/bookings',bookingController.getAllBookings)
 
 router.post("/coupons", adminController.addCoupon);
 

@@ -41,6 +41,26 @@ register : async (req, res) => {
   }
 },
 
+verifyToken: async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      user: {
+        _id: user._id,
+        email: user.email,
+        mobileNumber: user.mobileNumber
+      },
+      role: user.role
+    });
+  } catch (error) {
+    res.status(401).json({ message: 'Invalid token' });
+  }
+},
+
 verifyOTP : async (req, res) => {
   const { mobileNumber, otp, password } = req.body;
 
@@ -65,27 +85,33 @@ verifyOTP : async (req, res) => {
 
 loginWithPassword: async (req, res) => {
   const { mobileNumber, password } = req.body;
-  console.log(req.body);
-  console.log(mobileNumber,"mm")
 
   try {
-   
-    const user = await User.findOne({ mobileNumber: mobileNumber.mobileNumber });
-    console.log(user);
+    const user = await User.findOne({ mobileNumber });
 
     if (!user) {
       return res.status(400).json({ message: 'User not found' });
     }
 
-    
-    if (mobileNumber.password !== user.password) {
+    if (password !== user.password) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-  
-    const token = jwt.sign({ userId: user._id }, 'your-secret-key', { expiresIn: '1h' });
+    const token = jwt.sign(
+      { 
+        userId: user._id,
+        role: user.role 
+      }, 
+      'your-secret-key', 
+      { expiresIn: '24h' }
+    );
 
-    return res.json({ token, userId: user._id, role:user.role, message: 'Login successful' });
+    return res.json({ 
+      token, 
+      userId: user._id, 
+      role: user.role, 
+      message: 'Login successful' 
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Server error' });
