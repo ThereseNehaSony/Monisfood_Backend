@@ -105,6 +105,7 @@ loginWithPassword: async (req, res) => {
       'your-secret-key', 
       { expiresIn: '24h' }
     );
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     return res.json({ 
       token, 
