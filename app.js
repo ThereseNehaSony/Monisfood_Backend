@@ -12,23 +12,19 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 // Setting up cors
-const allowedOrigins = [process.env.CLIENT_URL];
 const corsOptions = {
-  credentials: true,
-  origin: function (origin, callback) {
-    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: ["https://monis-food.vercel.app","http://localhost:5173","https://www.monis-food.vercel.app"],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
 };
 app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(logger("dev"));
 
 // Loading Routes
+
+
 
 const userRoutes = require("./routes/userRoutes");
 // const adminRoutes = require("./routes/admin");
