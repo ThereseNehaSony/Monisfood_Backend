@@ -13,11 +13,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // Setting up cors
 const corsOptions = {
-  origin: ["https://monis-food.vercel.app","http://localhost:5173","https://www.monis-food.vercel.app"],
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  origin: [
+    "https://monis-food.vercel.app",
+    "http://localhost:5173",
+    "https://www.monis-food.vercel.app"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
-app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(logger("dev"));
