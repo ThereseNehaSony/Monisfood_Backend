@@ -4,16 +4,16 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors"); 
 const logger = require("morgan");
 const mongoose = require("mongoose");
+
 const app = express();
 
-// Enable preflight requests for all routes
-app.options('*', cors());
-
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}));
+// CORS setup
+const corsOptions = {
+  credentials: true,
+  origin: [process.env.CLIENT_URL],
+  methods: "GET, HEAD, PUT, PATCH, POST, DELETE",
+};
+app.use(cors(corsOptions));
 
 // Global middleware to handle preflight
 app.use((req, res, next) => {
