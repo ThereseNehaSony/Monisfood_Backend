@@ -10,23 +10,11 @@ const app = express();
 // CORS setup
 const corsOptions = {
   credentials: true,
-  origin: [process.env.CLIENT_URL],
+  origin: [process.env.CLIENT_URL,process.env.CLIENT_URL_2],
   methods: "GET, HEAD, PUT, PATCH, POST, DELETE",
 };
 app.use(cors(corsOptions));
 
-// Global middleware to handle preflight
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
