@@ -70,9 +70,7 @@ const bookingController ={
         
           if (paymentDetails) {
             const generatedSignature = crypto
-              .createHmac('sha256',process.env.RAZORPAY_KEY_ID
-                
-              ) 
+              .createHmac('sha256',process.env.RAZORPAY_SECRET_KEY) 
               .update(`${paymentDetails.razorpayOrderId}|${paymentDetails.razorpayPaymentId}`)
               .digest('hex');
     console.log(generatedSignature,"gen",paymentDetails.razorpaySignature,"pp");
@@ -134,72 +132,103 @@ const bookingController ={
           res.status(500).json({ message: 'Server error, please try again later' });
         }
       },
-    getAllBookings : async (req, res) => {
-      try {
-        const categorizedBookings = await Booking.aggregate([
-          {
-            $unwind: {
-              path: '$selectedItems.breakfast',
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $unwind: {
-              path: '$selectedItems.lunch',
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $unwind: {
-              path: '$selectedItems.snack',
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          {
-            $addFields: {
-              mealType: {
-                $cond: {
-                  if: { $ne: ['$selectedItems.breakfast', null] },
-                  then: 'Breakfast',
-                  else: {
-                    $cond: {
-                      if: { $ne: ['$selectedItems.lunch', null] },
-                      then: 'Lunch',
-                      else: 'Snack',
-                    },
+     
+
+      
+       getAllBookings : async (req, res) => {
+        const { startDate, endDate, mealType, userCategory } = req.query;
+    
+    try {
+      const matchFilters = {};
+      
+      // Apply date range filter if available
+      if (startDate && endDate) {
+        matchFilters.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+      }
+      
+      // Apply user category filter if available
+      if (userCategory) {
+        matchFilters.userCategory = userCategory;
+      }
+      
+      // Aggregation pipeline
+      const categorizedBookings = await Booking.aggregate([
+        // Match initial filters (date range, user category, etc.)
+        { $match: matchFilters },
+        
+        // Flatten the selectedItems (all meal types into a single array)
+        {
+          $project: {
+            mealTypeItems: {
+              $concatArrays: [
+                {
+                  $map: {
+                    input: '$selectedItems.breakfast',
+                    as: 'item',
+                    in: { type: 'breakfast', details: '$$item' },
                   },
                 },
-              },
-              itemDetails: {
-                $ifNull: [
-                  '$selectedItems.breakfast',
-                  { $ifNull: ['$selectedItems.lunch', '$selectedItems.snack'] },
-                ],
-              },
+                {
+                  $map: {
+                    input: '$selectedItems.lunch',
+                    as: 'item',
+                    in: { type: 'lunch', details: '$$item' },
+                  },
+                },
+                {
+                  $map: {
+                    input: '$selectedItems.snack',
+                    as: 'item',
+                    in: { type: 'snack', details: '$$item' },
+                  },
+                },
+              ],
             },
+            createdAt: 1,
           },
-          {
-            $group: {
-              _id: {
-                mealType: '$mealType',
-                date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-              },
-              bookings: { $push: '$$ROOT' },
+        },
+
+        // Unwind the combined meal type array
+        { $unwind: '$mealTypeItems' },
+
+        // Add fields for meal type and item details
+        {
+          $addFields: {
+            mealType: '$mealTypeItems.type',
+            itemDetails: '$mealTypeItems.details',
+          },
+        },
+        
+        // Apply meal type filter if provided (moved to after the $addFields stage)
+        ...(mealType ? [{ $match: { mealType } }] : []),
+
+        // Group by meal type and date
+        {
+          $group: {
+            _id: {
+              mealType: '$mealType',
+              date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
             },
+            bookings: { $push: '$$ROOT' },
           },
-          {
-            $sort: { '_id.date': 1, '_id.mealType': 1 },
-          },
-        ]);
-    console.log(categorizedBookings);
+        },
+
+        // Sort categorized bookings by date and meal type
+        { $sort: { '_id.date': 1, '_id.mealType': 1 } },
+      ]);
+
+      console.log(categorizedBookings);
+
+      res.status(200).json({ categorizedBookings });
+    } catch (error) {
+      console.error('Error fetching categorized bookings:', error);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  },
+
+
+      
     
-        res.status(200).json({ categorizedBookings });
-      } catch (error) {
-        console.error('Error fetching categorized bookings:', error);
-        res.status(500).json({ message: 'Internal Server Error' });
-      }
-    },
-     
 }
  
 module.exports = bookingController

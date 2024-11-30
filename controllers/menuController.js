@@ -4,6 +4,7 @@ const DailyMenu = require('../model/DailyMenu');
 
 const addMenuItem = async (req, res) => {
   const { name, description, portions, image } = req.body;
+  console.log(req.body)
 console.log(image,"sfaf");
 
   try {
@@ -91,11 +92,11 @@ const getDailyMenu = async (req, res) => {
  const editMenuItem = async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, description, price } = req.body;
+      const { name, description, price, portions, image } = req.body;
   
       const updatedItem = await MenuItem.findByIdAndUpdate(
         id,
-        { name, description, price },
+        { name, description, price ,portions, image},
         { new: true }
       );
   

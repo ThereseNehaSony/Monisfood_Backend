@@ -3,6 +3,7 @@ const User = require('../model/User')
 const School = require('../model/Schools');
 const Coupon = require('../model/Coupon');
 const Wallet = require('../model/Wallet');
+const Bookings = require('../model/Bookings');
 
 const adminController ={
 
@@ -208,5 +209,90 @@ console.log(coupon);
     return res.status(500).json({ message: 'Server error.' });
   }
 },
+
+getMealRevenue : async (req,res) => {
+
+  try {
+
+    const{timePeriod}= req.params
+    console.log(timePeriod,"prtiod");
+    
+    let startOfPeriod;
+
+    // Determine the start date based on the time period (daily or monthly)
+    if (timePeriod === 'daily') {
+      startOfPeriod = new Date();
+      startOfPeriod.setHours(0, 0, 0, 0); // Start of today
+    } else if (timePeriod === 'monthly') {
+      startOfPeriod = new Date();
+      startOfPeriod.setDate(1); // Start of the current month
+      startOfPeriod.setHours(0, 0, 0, 0); // Start of the month at 00:00
+    }
+
+    // Aggregate total revenue for each meal type (breakfast, lunch, snack) within the time period
+    const revenueData = await Bookings.aggregate([
+      { $match: { createdAt: { $gte: startOfPeriod } } }, // Filter bookings within the time period
+      {
+        $project: {
+          breakfastRevenue: {
+            $sum: {
+              $map: {
+                input: '$selectedItems.breakfast',
+                as: 'item',
+                in: { $multiply: ['$$item.details.price', '$$item.details.quantity'] }
+              }
+            }
+          },
+          lunchRevenue: {
+            $sum: {
+              $map: {
+                input: '$selectedItems.lunch',
+                as: 'item',
+                in: { $multiply: ['$$item.details.price', '$$item.details.quantity'] }
+              }
+            }
+          },
+          snackRevenue: {
+            $sum: {
+              $map: {
+                input: '$selectedItems.snack',
+                as: 'item',
+                in: { $multiply: ['$$item.details.price', '$$item.details.quantity'] }
+              }
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalBreakfastRevenue: { $sum: '$breakfastRevenue' },
+          totalLunchRevenue: { $sum: '$lunchRevenue' },
+          totalSnackRevenue: { $sum: '$snackRevenue' }
+        }
+      }
+    ]);
+
+    // If no data is returned, set default values
+    const revenue = revenueData.length > 0 ? revenueData[0] : {
+      totalBreakfastRevenue: 0,
+      totalLunchRevenue: 0,
+      totalSnackRevenue: 0
+    };
+console.log(revenue,"revenue");
+
+    return revenue;
+  } catch (error) {
+    console.error('Error calculating revenue:', error);
+    throw new Error('Unable to calculate revenue');
+  }
+},
+
+// Example usage: Get daily revenue for meal types
+// getMealRevenue('daily').then(revenue => {
+//   console.log('Revenue:', revenue);
+// }).catch(err => {
+//   console.error(err);
+// }
 }
 module.exports=adminController

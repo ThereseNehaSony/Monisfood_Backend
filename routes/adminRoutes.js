@@ -37,7 +37,7 @@ router.get("/coupons", adminController.getAllCoupons);
 router.post('/coupons/validate',adminController.validateCoupon)
 
 router.get('/bookings',bookingController.getAllBookings)
-
+router.get('/revenue/:timePeriod',adminController.getMealRevenue)
 router.post("/coupons", adminController.addCoupon);
 
 router.get('/export/students', async (req, res) => {
