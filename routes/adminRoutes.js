@@ -36,8 +36,13 @@ router.put('/students/:id',adminController.editStudent)
 router.put('/teachers/:id',adminController.editTecaher)
 router.delete('/students/:id', adminController.deleteStudent)
 router.delete('/teachers/:id', adminController.deleteTeacher)
+
+
 router.post('/schools',adminController.addSchool)
 router.get('/schools',adminController.getSchools)
+router.put("/schools/:id",adminController.editSchool)
+router.delete("/schools/:id",adminController.deleteSchool)
+
 router.get("/coupons", adminController.getAllCoupons);
 router.post('/coupons/validate', adminController.validateCoupon)
 

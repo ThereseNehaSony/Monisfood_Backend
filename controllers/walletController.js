@@ -4,13 +4,15 @@ const walletController ={
     getWalletBalance : async (req, res) => {
         try {
           const { userId } = req.query;
-          console.log(userId);
+          console.log(userId,"kkkk");
           
           const wallet = await Wallet.findOne({ userId });
-      
+      console.log(wallet);
+      console.log(wallet.balance);
           if (!wallet) {
             return res.status(404).json({ message: 'Wallet not found for the user' });
           }
+      console.log(wallet.balance);
       
           return res.status(200).json({
             balance: wallet.balance,
@@ -25,7 +27,7 @@ const walletController ={
         try {
           const { userId } = req.query;
       
-          console.log(userId);
+          console.log(userId),"ghg";
           
           const wallet = await Wallet.findOne({ userId });
       

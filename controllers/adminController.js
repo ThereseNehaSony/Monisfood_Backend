@@ -135,6 +135,44 @@ deleteStudent: async (req, res) => {
       res.status(500).json({ message: "Internal server error" });
     }
   },
+
+  editSchool:async (req, res) => {
+    try {
+      const { name } = req.body;
+      console.log(req.body);
+      
+      const school = await School.findByIdAndUpdate(
+        req.params.id,
+        { name },
+        { new: true }
+      );
+  
+      if (!school) {
+        return res.status(404).json({ message: "School not found" });
+      }
+  
+      res.json({ school });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Error updating school" });
+    }
+  },
+
+deleteSchool:async (req, res) => {
+  try {
+    const school = await School.findByIdAndDelete(req.params.id);
+
+    if (!school) {
+      return res.status(404).json({ message: "School not found" });
+    }
+
+    res.json({ message: "School deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting school" });
+  }
+},
+
   getAllCoupons : async (req, res) => {
     try {
       const coupons = await Coupon.find();
