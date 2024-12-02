@@ -17,6 +17,7 @@ const {
 const { generatePDF } = require('../util/generatePDF'); 
 const adminController = require('../controllers/adminController');
 const bookingController = require('../controllers/bookingController');
+const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 
 router.post('/menu-item', addMenuItem);
@@ -38,7 +39,7 @@ router.delete('/teachers/:id', adminController.deleteTeacher)
 router.post('/schools',adminController.addSchool)
 router.get('/schools',adminController.getSchools)
 router.get("/coupons", adminController.getAllCoupons);
-router.post('/coupons/validate',adminController.validateCoupon)
+router.post('/coupons/validate', adminController.validateCoupon)
 
 router.get('/bookings',bookingController.getAllBookings)
 router.get('/revenue/:timePeriod',adminController.getMealRevenue)
