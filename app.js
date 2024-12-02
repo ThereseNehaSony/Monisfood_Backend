@@ -10,7 +10,8 @@ const app = express();
 // CORS setup
 const corsOptions = {
   credentials: true,
-  origin: [process.env.CLIENT_URL, process.env.CLIENT_URL_2],
+  origin: process.env.CORS_ORIGINS.split(','),
+
   methods: "GET, HEAD, PUT, PATCH, POST, DELETE",
 };
 app.use(cors(corsOptions));

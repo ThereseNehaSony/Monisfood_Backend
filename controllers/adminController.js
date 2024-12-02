@@ -190,37 +190,75 @@ deleteStudent: async (req, res) => {
   
       const discount = coupon.discount;
   
-      // Update wallet balance and add transaction record
-      const wallet = await Wallet.findOneAndUpdate(
-        { userId },
-        {
-          $inc: { balance: discount },
-          $push: {
-            transactions: {
-              type: 'credit',
-              amount: discount,
-              description: `Applied coupon: ${coupon.code}`,
-            },
-          },
-        },
-        { new: true, upsert: true }
-      );
-  
-      if (!wallet) {
-        return res.status(500).json({ message: 'Failed to update wallet.' });
-      }
-  
-      // Return success response
+      // Return success response with the discount amount
       return res.status(200).json({
         message: 'Coupon applied successfully.',
         discountAmount: discount,
-        walletBalance: wallet.balance,
       });
     } catch (error) {
       console.error('Error applying coupon:', error);
       return res.status(500).json({ message: 'Server error.' });
     }
   },
+  
+
+
+  // validateCoupon: async (req, res) => {
+  //   const { code, userId } = req.body;
+  
+  //   console.log("Request body:", req.body);
+  
+  //   if (!userId) {
+  //     return res.status(400).json({ message: 'User ID is required.' });
+  //   }
+  
+  //   try {
+  //     // Check if coupon exists
+  //     const coupon = await Coupon.findOne({ code });
+  //     if (!coupon) {
+  //       return res.status(404).json({ message: 'Invalid coupon code.' });
+  //     }
+  
+  //     console.log("Found coupon:", coupon);
+  
+  //     // Check if coupon has expired
+  //     if (new Date(coupon.expiryDate) < new Date()) {
+  //       return res.status(400).json({ message: 'Coupon has expired.' });
+  //     }
+  
+  //     const discount = coupon.discount;
+  
+  //     // Update wallet balance and add transaction record
+  //     const wallet = await Wallet.findOneAndUpdate(
+  //       { userId },
+  //       {
+  //         $inc: { balance: discount },
+  //         $push: {
+  //           transactions: {
+  //             type: 'credit',
+  //             amount: discount,
+  //             description: `Applied coupon: ${coupon.code}`,
+  //           },
+  //         },
+  //       },
+  //       { new: true, upsert: true }
+  //     );
+  
+  //     if (!wallet) {
+  //       return res.status(500).json({ message: 'Failed to update wallet.' });
+  //     }
+  
+  //     // Return success response
+  //     return res.status(200).json({
+  //       message: 'Coupon applied successfully.',
+  //       discountAmount: discount,
+  //       walletBalance: wallet.balance,
+  //     });
+  //   } catch (error) {
+  //     console.error('Error applying coupon:', error);
+  //     return res.status(500).json({ message: 'Server error.' });
+  //   }
+  // },
   
 getMealRevenue: async (req, res) => {
   try {

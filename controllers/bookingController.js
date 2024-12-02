@@ -28,63 +28,51 @@ const bookingController ={
           res.status(500).json({ message: 'Failed to create order' });
         }
       },
-
-    createBooking: async (req, res) => {
-        const { userId,paymentDetails,name, meals, totalAmount, discount, walletBalanceUsed, paymentMethod } = req.body;
-    console.log(paymentDetails);
-    
+      createBooking: async (req, res) => {
+        const { userId, paymentDetails, name, meals, totalAmount, discount, walletBalanceUsed, paymentMethod } = req.body;
+        console.log(paymentDetails);
+      
         try {
           console.log('Incoming booking data:', req.body);
-    
-          // const userId = '6731bd99d81af3e60c9e8178'; 
-
       
-          if (!meals || !meals.breakfast || !Array.isArray(meals.breakfast)) {
-            return res.status(400).json({ message: 'Breakfast items are missing or malformed' });
+          if (!meals || typeof meals !== 'object') {
+            return res.status(400).json({ message: 'Invalid meals data' });
           }
-    
-          if (!meals.lunch || !Array.isArray(meals.lunch)) {
-            return res.status(400).json({ message: 'Lunch items are missing or malformed' });
-          }
-    
-          if (!meals.snack || !Array.isArray(meals.snack)) {
-            return res.status(400).json({ message: 'Snack items are missing or malformed' });
-          }
-    
-        
-          const breakfastItems = meals.breakfast.map((item) => ({
-            name: item.name,
-            details: item.details,
-          }));
-    
-          const lunchItems = meals.lunch.map((item) => ({
-            name: item.name,
-            details: item.details,
-          }));
-    
-          const snackItems = meals.snack.map((item) => ({
-            name: item.name,
-            details: item.details,
-          }));
-    
-        
+      
+          // Process meals if they exist
+          const breakfastItems = meals.breakfast && Array.isArray(meals.breakfast)
+            ? meals.breakfast.map((item) => ({ name: item.name, details: item.details }))
+            : [];
+      
+          const lunchItems = meals.lunch && Array.isArray(meals.lunch)
+            ? meals.lunch.map((item) => ({ name: item.name, details: item.details }))
+            : [];
+      
+          const snackItems = meals.snack && Array.isArray(meals.snack)
+            ? meals.snack.map((item) => ({ name: item.name, details: item.details }))
+            : [];
+      
+          console.log({ breakfastItems, lunchItems, snackItems });
+      
+          // Verify payment details if present
           if (paymentDetails) {
             const generatedSignature = crypto
-              .createHmac('sha256',process.env.RAZORPAY_SECRET_KEY) 
+              .createHmac('sha256', process.env.RAZORPAY_SECRET_KEY)
               .update(`${paymentDetails.razorpayOrderId}|${paymentDetails.razorpayPaymentId}`)
               .digest('hex');
-    console.log(generatedSignature,"gen",paymentDetails.razorpaySignature,"pp");
-    
+            console.log(generatedSignature, "gen", paymentDetails.razorpaySignature, "pp");
+      
             if (generatedSignature !== paymentDetails.razorpaySignature) {
-             console.log('wrong');
-             
+              console.log('wrong');
               return res.status(400).json({ message: 'Payment verification failed' });
             }
           }
+      
+          // Create the booking
           const bookingDate = new Date();
           const mealDate = new Date();
           mealDate.setDate(mealDate.getDate() + 1);
-          
+      
           const booking = new Booking({
             userId,
             selectedItems: {
@@ -101,21 +89,38 @@ const bookingController ={
             status: paymentDetails ? 'confirmed' : 'free',
             mealDate,
           });
-    
+      console.log(booking,"booking");
+      
+          // Save the booking first
           await booking.save();
-          console.log(userId,"id");
-          
+          console.log(userId, "id");
+      
+          // Now, update the wallet balance after successful booking
           const wallet = await Wallet.findOne({ userId });
-          
-          
-         wallet.balance = wallet.balance - walletBalanceUsed
-         await wallet.save();
+          if (!wallet) {
+            return res.status(404).json({ message: 'Wallet not found.' });
+          }
+      
+          // Deduct the wallet balance for the used wallet amount
+          wallet.balance -= walletBalanceUsed;
+      
+          // If a discount was applied, credit it to the wallet
+          if (discount && discount > 0) {
+            wallet.balance += discount;
+            console.log(`Discount of ${discount} credited to wallet`);
+          }
+      
+          // Save the updated wallet
+          await wallet.save();
+      
+          // Return success response
           res.status(201).json({ message: 'Booking created successfully', booking });
         } catch (error) {
           console.error('Error creating booking:', error);
           res.status(500).json({ message: 'Internal Server Error', error: error.message });
         }
       },
+      
       getBookings: async (req, res) => {
         try {
           // Fetch userId from the authenticated user (assumed to be in req.user)
