@@ -1,6 +1,6 @@
 const MenuItem = require('../model/MenuItems');
 const DailyMenu = require('../model/DailyMenu');
-
+const mongoose = require('mongoose');
 
 const addMenuItem = async (req, res) => {
   const { name, description, portions, image } = req.body;
@@ -198,6 +198,98 @@ const addWeeklyMenu = async (req, res) => {
   }
 };
 
+const saveMenu = async (req, res) => {
+  const { dateRange, menu } = req.body; // Expecting dateRange and menu object from frontend
+console.log(menu,"menu");
+
+  // Validate date range and menu
+  if (!dateRange || !dateRange.startDate || !dateRange.endDate || !menu) {
+    return res.status(400).json({ message: 'Invalid data' });
+  }
+
+  // Function to generate all the dates between the start and end date
+  const daysInRange = (startDate, endDate) => {
+    const days = [];
+    let start = new Date(startDate);
+    const end = new Date(endDate);
+    while (start <= end) {
+      days.push(start.toISOString().split('T')[0]); // Format to "yyyy-mm-dd"
+      start.setDate(start.getDate() + 1);
+    }
+    return days;
+  };
+
+  const dayRange = daysInRange(dateRange.startDate, dateRange.endDate); // Get the date range as an array
+
+  try {
+    const updatedMenus = []; // To store the updated menu documents
+
+    // Loop through each day and save or update the menu items
+    for (const day of dayRange) {
+      const menuForDay = menu[day]; // Get menu for the specific day
+
+      if (!menuForDay) {
+        continue; // Skip if no menu data for this day
+      }
+
+      // Initialize meal data
+      const mealData = {
+        breakfast: [],
+        lunch: [],
+        snack: [],
+      };
+
+      // Update the meal types based on the provided data
+      if (menuForDay.Breakfast && menuForDay.Breakfast.length > 0) {
+        mealData.breakfast = await MenuItem.find({
+          _id: { $in: menuForDay.Breakfast },
+        }).select('_id'); // Fetch the selected items for breakfast
+      }
+
+      if (menuForDay.Lunch && menuForDay.Lunch.length > 0) {
+        mealData.lunch = await MenuItem.find({
+          _id: { $in: menuForDay.Lunch },
+        }).select('_id'); // Fetch the selected items for lunch
+      }
+
+      if (menuForDay.Snacks && menuForDay.Snacks.length > 0) {
+        mealData.snack = await MenuItem.find({
+          _id: { $in: menuForDay.Snacks },
+        }).select('_id'); // Fetch the selected items for snacks
+      }
+
+      // Save or update the menu for this day
+      const dailyMenu = await DailyMenu.findOneAndUpdate(
+        { date: day }, // Find the document for the specific day
+        { $set: { meals: mealData } }, // Set the updated meal data for the day
+        { new: true, upsert: true } // Create a new document if not found, otherwise update
+      );
+
+      updatedMenus.push(dailyMenu); // Add the saved/updated document to the array
+    }
+
+    // Respond with the updated menus
+    res.status(200).json({ message: 'Menu saved successfully', data: updatedMenus });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to save menu', error: error.message });
+  }
+}
+function getDaysInRange(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const days = [];
+  
+  while (start <= end) {
+    days.push(new Date(start).toISOString().split('T')[0]); // Format as YYYY-MM-DD
+    start.setDate(start.getDate() + 1); // Increment the date
+  }
+  
+  return days;
+}
+
+
 const getWeeklyMenu = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -231,7 +323,54 @@ const getWeeklyMenu = async (req, res) => {
     console.error('Error fetching weekly menu:', error);
     res.status(500).json({ message: 'Error fetching weekly menu', error: error.message });
   }
+}
+const updateWeeklyMenu = async (req, res) => {
+  try {
+    const menus = req.body;
+
+    // Validate the input data
+    if (!menus || !Array.isArray(menus)) {
+      return res.status(400).json({ message: "Invalid menu data. Expected an array of menus." });
+    }
+
+    // Process each menu in the array
+    for (const menu of menus) {
+      if (!menu.date || !menu.meals) {
+        return res.status(400).json({ message: "Menu data is incomplete. Date and meals are required." });
+      }
+
+      const existingMenu = await DailyMenu.findOne({ date: menu.date });
+
+      if (existingMenu) {
+        // Update the existing menu
+        existingMenu.meals.breakfast = menu.meals.breakfast.map((item) => item._id);
+        existingMenu.meals.lunch = menu.meals.lunch.map((item) => item._id);
+        existingMenu.meals.snack = menu.meals.snack.map((item) => item._id);
+        await existingMenu.save();
+      } else {
+        // Create a new menu for the given date
+        await DailyMenu.create({
+          date: menu.date,
+          meals: {
+            breakfast: menu.meals.breakfast.map((item) => item._id),
+            lunch: menu.meals.lunch.map((item) => item._id),
+            snack: menu.meals.snack.map((item) => item._id),
+          },
+        });
+      }
+    }
+
+    // Return success response
+    return res.status(200).json({ message: "Menu updated successfully!" });
+
+  } catch (error) {
+    // Handle unexpected errors
+    console.error("Error updating weekly menu:", error);
+    return res.status(500).json({ message: "Failed to update menus. Please try again.", error: error.message });
+  }
 };
 
 
-module.exports = {getMenu, addMenuItem, getAvailableItems, addDailyMenu, getDailyMenu ,deleteMenuItem, editMenuItem, addWeeklyMenu, getWeeklyMenu};
+
+
+module.exports = {getMenu, addMenuItem, getAvailableItems, addDailyMenu, getDailyMenu ,deleteMenuItem, editMenuItem, addWeeklyMenu, getWeeklyMenu,updateWeeklyMenu,saveMenu};

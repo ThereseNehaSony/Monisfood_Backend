@@ -30,7 +30,7 @@ const bookingController ={
       },
 
     createBooking: async (req, res) => {
-        const { userId,paymentDetails, meals, totalAmount, discount, walletBalanceUsed, paymentMethod } = req.body;
+        const { userId,paymentDetails,name, meals, totalAmount, discount, walletBalanceUsed, paymentMethod } = req.body;
     console.log(paymentDetails);
     
         try {
@@ -81,7 +81,9 @@ const bookingController ={
               return res.status(400).json({ message: 'Payment verification failed' });
             }
           }
-    
+          const bookingDate = new Date();
+          const mealDate = new Date();
+          mealDate.setDate(mealDate.getDate() + 1);
           
           const booking = new Booking({
             userId,
@@ -90,12 +92,14 @@ const bookingController ={
               lunch: lunchItems,
               snack: snackItems,
             },
+            name,
             totalAmount,
             discount,
             walletBalanceUsed,
             paymentMethod: paymentDetails ? 'Razorpay' : 'Free',
             paymentDetails: paymentDetails || null,
             status: paymentDetails ? 'confirmed' : 'free',
+            mealDate,
           });
     
           await booking.save();
@@ -115,15 +119,16 @@ const bookingController ={
       getBookings: async (req, res) => {
         try {
           // Fetch userId from the authenticated user (assumed to be in req.user)
-          const userId = '6731bd99d81af3e60c9e8178';
+          const { userId } = req.params;
+      console.log(userId);
       
           // Fetch all bookings for the user, populate any required fields if needed
           const bookings = await Booking.find({ userId }).sort({ createdAt: -1 }); // Sorting by createdAt in descending order
       
           // If no bookings found, send a message
-          if (!bookings.length) {
-            return res.status(404).json({ message: 'No bookings found for this user' });
-          }
+          // if (!bookings.length) {
+          //   return res.status(404).json({ message: 'No bookings found for this user' });
+          // }
       
           // Return the bookings data as a response
           res.status(200).json(bookings);

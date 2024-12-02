@@ -209,90 +209,62 @@ console.log(coupon);
     return res.status(500).json({ message: 'Server error.' });
   }
 },
-
-getMealRevenue : async (req,res) => {
-
+getMealRevenue: async (req, res) => {
   try {
+    const { timePeriod } = req.params;
 
-    const{timePeriod}= req.params
-    console.log(timePeriod,"prtiod");
-    
     let startOfPeriod;
-
-    // Determine the start date based on the time period (daily or monthly)
     if (timePeriod === 'daily') {
       startOfPeriod = new Date();
-      startOfPeriod.setHours(0, 0, 0, 0); // Start of today
+      console.log(startOfPeriod,"sss");
+      
+      startOfPeriod.setHours(0, 0, 0, 0);
     } else if (timePeriod === 'monthly') {
       startOfPeriod = new Date();
-      startOfPeriod.setDate(1); // Start of the current month
-      startOfPeriod.setHours(0, 0, 0, 0); // Start of the month at 00:00
+      startOfPeriod.setDate(1);
+      startOfPeriod.setHours(0, 0, 0, 0);
     }
 
-    // Aggregate total revenue for each meal type (breakfast, lunch, snack) within the time period
-    const revenueData = await Bookings.aggregate([
-      { $match: { createdAt: { $gte: startOfPeriod } } }, // Filter bookings within the time period
-      {
-        $project: {
-          breakfastRevenue: {
-            $sum: {
-              $map: {
-                input: '$selectedItems.breakfast',
-                as: 'item',
-                in: { $multiply: ['$$item.details.price', '$$item.details.quantity'] }
-              }
-            }
-          },
-          lunchRevenue: {
-            $sum: {
-              $map: {
-                input: '$selectedItems.lunch',
-                as: 'item',
-                in: { $multiply: ['$$item.details.price', '$$item.details.quantity'] }
-              }
-            }
-          },
-          snackRevenue: {
-            $sum: {
-              $map: {
-                input: '$selectedItems.snack',
-                as: 'item',
-                in: { $multiply: ['$$item.details.price', '$$item.details.quantity'] }
-              }
-            }
-          }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalBreakfastRevenue: { $sum: '$breakfastRevenue' },
-          totalLunchRevenue: { $sum: '$lunchRevenue' },
-          totalSnackRevenue: { $sum: '$snackRevenue' }
-        }
-      }
-    ]);
+    // Fetch all bookings within the time period
+    const bookings = await Bookings.find({ 
+      createdAt: { $gte: startOfPeriod } 
+    })
+console.log(bookings);
 
-    // If no data is returned, set default values
-    const revenue = revenueData.length > 0 ? revenueData[0] : {
+    // Manual calculation
+    const revenue = {
       totalBreakfastRevenue: 0,
       totalLunchRevenue: 0,
       totalSnackRevenue: 0
     };
-console.log(revenue,"revenue");
 
-    return revenue;
+    bookings.forEach(booking => {
+      // Calculate breakfast revenue
+      if (booking.selectedItems?.breakfast) {
+        revenue.totalBreakfastRevenue += booking.selectedItems.breakfast.reduce((total, item) => 
+          total + (item.details.price * item.details.quantity), 0);
+      }
+
+      // Calculate lunch revenue
+      if (booking.selectedItems?.lunch) {
+        revenue.totalLunchRevenue += booking.selectedItems.lunch.reduce((total, item) => 
+          total + (item.details.price * item.details.quantity), 0);
+      }
+
+      // Calculate snack revenue
+      if (booking.selectedItems?.snack) {
+        revenue.totalSnackRevenue += booking.selectedItems.snack.reduce((total, item) => 
+          total + (item.details.price * item.details.quantity), 0);
+      }
+    });
+
+    console.log('Calculated Revenue:', revenue);
+    res.status(200).json(revenue);
   } catch (error) {
     console.error('Error calculating revenue:', error);
-    throw new Error('Unable to calculate revenue');
+    res.status(500).json({ message: 'Unable to calculate revenue', error: error.message });
   }
 },
 
-// Example usage: Get daily revenue for meal types
-// getMealRevenue('daily').then(revenue => {
-//   console.log('Revenue:', revenue);
-// }).catch(err => {
-//   console.error(err);
-// }
 }
 module.exports=adminController

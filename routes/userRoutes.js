@@ -12,6 +12,9 @@ router.get('/meals',menuController.getMenu )
 router.get('/students', userController.getStudents)
 router.post('/students', userController.addStudent)
 router.get('/menu/:date',userController.getMenu)
+router.get('/weekly-menu/:startDate', userController.getWeeklyMenu);
+
+
  router.get('/:userId', userController.getUserDetails);
 router.get('/wallet/balance',walletController.getWalletBalance)
 router.get('/wallet/data',walletController.getWalletData)
@@ -19,7 +22,7 @@ router.get('/wallet/data',walletController.getWalletData)
 router.post('/bookings',bookingController.createBooking)
 router.post('/create-order',bookingController.createRzpOrder)
 
-router.get('/get/bookings', bookingController.getBookings)
+router.get('/get/bookings/:userId', bookingController.getBookings)
 
 router.put('/:userId', userController.updateUserDetails);
 

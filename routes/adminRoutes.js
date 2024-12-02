@@ -11,6 +11,8 @@ const {
   deleteMenuItem,
   addWeeklyMenu,
   getWeeklyMenu,
+  updateWeeklyMenu,
+  saveMenu
 } = require('../controllers/menuController');
 const { generatePDF } = require('../util/generatePDF'); 
 const adminController = require('../controllers/adminController');
@@ -25,6 +27,8 @@ router.put('/menu-item/:id', editMenuItem);
 router.delete('/menu-item/:id', deleteMenuItem);
 router.post('/weekly-menu', addWeeklyMenu);
 router.get('/weekly-menu', getWeeklyMenu); 
+router.post("/update-weekly-menu", updateWeeklyMenu);
+router.post('/save-menu',saveMenu)
 
 router.get('/users',adminController.getUsers )
 router.put('/students/:id',adminController.editStudent)

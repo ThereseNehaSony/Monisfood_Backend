@@ -7,12 +7,15 @@ const userController = {
     // Add a new student
  addStudent : async (req, res) => {
     try {
+      const { userId } = req.query;
       const { name, class: studentClass, school } = req.body;
+  console.log(userId);
   
       const newStudent = new Student({
         name,
         class: studentClass,
         school,
+        userId,
       });
   
       await newStudent.save();
@@ -25,7 +28,8 @@ const userController = {
   // Get all students
   getStudents : async (req, res) => {
     try {
-      const students = await Student.find();
+      const { userId } = req.query;
+      const students = await Student.find({ userId });
       res.json(students);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch students' });
@@ -52,6 +56,73 @@ const userController = {
       res.status(500).json({ message: 'Server error' });
     }
   },
+
+
+
+  getWeeklyMenu : async (req, res) => {
+    try {
+      const { startDate } = req.params;
+      console.log(startDate, "startDate");
+  
+      // Convert the start date to a Date object
+      const start = new Date(startDate);
+  
+      // Get the start of the week (Monday) and end of the week (Sunday)
+      const startOfWeek = new Date(start);
+      const endOfWeek = new Date(start);
+  
+      // Set startOfWeek to Monday and endOfWeek to Sunday
+      startOfWeek.setDate(start.getDate() - start.getDay() + 1); // Set to Monday
+      endOfWeek.setDate(start.getDate() - start.getDay() + 7); // Set to Sunday
+  
+      // Format the dates as YYYY-MM-DD (standard format)
+      const formatDate = (date) => {
+        return date.toISOString().split('T')[0];
+      };
+  
+      const weeklyMenu = {};
+  
+      // Loop through all 7 days of the week and fetch the menu for each day
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startOfWeek);
+        currentDate.setDate(startOfWeek.getDate() + i); // Increment by day
+        const formattedDate = formatDate(currentDate);
+  
+        const dailyMenu = await DailyMenu.findOne({ date: formattedDate }).populate({
+          path: 'meals.breakfast meals.lunch meals.snack',
+          model: 'MenuItem',
+        });
+  
+        if (dailyMenu) {
+          // Separate meals by type
+          weeklyMenu[formattedDate] = {
+            breakfast: dailyMenu.meals.breakfast || [],
+            lunch: dailyMenu.meals.lunch || [],
+            snack: dailyMenu.meals.snack || [],
+          };
+        } else {
+          // If no menu is found for the day, set empty arrays for each meal type
+          weeklyMenu[formattedDate] = {
+            breakfast: [],
+            lunch: [],
+            snack: [],
+          };
+        }
+      }
+  console.log(weeklyMenu);
+  
+      if (Object.keys(weeklyMenu).length === 0) {
+        return res.status(404).json({ message: 'No menus found for the week' });
+      }
+  
+      res.json(weeklyMenu);
+    } catch (error) {
+      console.error('Error fetching weekly menu:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
+
+
   getUserDetails : async (req, res) => {
     const { userId } = req.params;
   console.log(userId,"id");
