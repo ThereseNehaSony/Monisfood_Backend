@@ -236,7 +236,66 @@ const bookingController ={
     }
   },
 
-
+  cancelMeal: async (req, res) => {
+    const { orderId, mealType, itemIndex } = req.body;
+  
+    try {
+      console.log('Request Body:', req.body);
+  
+      if (!orderId || !mealType || itemIndex === undefined) {
+        return res.status(400).json({ message: 'Invalid request data' });
+      }
+  
+      const booking = await Booking.findById(orderId);
+      if (!booking) {
+        return res.status(404).json({ message: 'Booking not found' });
+      }
+  
+      console.log('Booking Found:', booking);
+      console.log('Selected Items:', booking.selectedItems);
+  
+      // Validate mealType and mealIndex
+      const mealArray = booking.selectedItems[mealType];
+      console.log('Meal Type Array:', mealArray);
+  
+      if (!Array.isArray(mealArray) || itemIndex >= mealArray.length) {
+        return res.status(404).json({ message: 'Meal not found or invalid index' });
+      }
+  
+      // Access the meal object
+      const meal = mealArray[itemIndex];
+      console.log('Meal:', meal);
+  
+      if (!meal) {
+        console.log("no mea");
+        
+        return res.status(404).json({ message: 'Meal not found' });
+      }
+  
+      // For testing purposes, set deadlines relative to the current time
+      const currentTime = new Date();
+      const cancellationDeadline = new Date(currentTime.getTime() + (mealType === 'breakfast' ? 5 : 10) * 60 * 1000);
+      console.log('Current Time:', currentTime);
+      console.log('Cancellation Deadline:', cancellationDeadline);
+  
+      if (currentTime > cancellationDeadline) {
+        return res.status(400).json({ message: 'Cancellation deadline passed' });
+      }
+  
+      meal.canceled = true;
+      const refundAmount = meal.details.price * meal.details.quantity;
+  
+      // Uncomment if wallet balance is used
+      // booking.walletBalanceUsed = (booking.walletBalanceUsed || 0) + refundAmount;
+  
+      await booking.save();
+      return res.status(200).json({ message: 'Meal canceled, credits added to wallet' });
+    } catch (error) {
+      console.error('Error:', error.message);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+  
       
     
 }

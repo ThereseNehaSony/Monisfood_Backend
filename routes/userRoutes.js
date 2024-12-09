@@ -23,7 +23,7 @@ router.post('/bookings',bookingController.createBooking)
 router.post('/create-order',bookingController.createRzpOrder)
 
 router.get('/get/bookings/:userId', bookingController.getBookings)
-
+router.post('/cancel-meal',bookingController.cancelMeal)
 router.put('/:userId', userController.updateUserDetails);
 
 function getWeekDates() {

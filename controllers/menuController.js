@@ -3,12 +3,12 @@ const DailyMenu = require('../model/DailyMenu');
 const mongoose = require('mongoose');
 
 const addMenuItem = async (req, res) => {
-  const { name, description, portions, image } = req.body;
+  const { name, description, portions, image, category } = req.body;
   console.log(req.body)
 console.log(image,"sfaf");
 
   try {
-    const menuItem = new MenuItem({ name, description, portions, image });
+    const menuItem = new MenuItem({ name, description, portions, image ,category});
     await menuItem.save();
     res.status(201).json({ message: "Menu item added successfully!", menuItem });
   } catch (error) {
@@ -92,11 +92,11 @@ const getDailyMenu = async (req, res) => {
  const editMenuItem = async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, description, price, portions, image } = req.body;
+      const { name, description, price, portions, image,category } = req.body;
   
       const updatedItem = await MenuItem.findByIdAndUpdate(
         id,
-        { name, description, price ,portions, image},
+        { name, description, price ,portions, image,category},
         { new: true }
       );
   

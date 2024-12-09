@@ -15,6 +15,7 @@ const bookingSchema = new mongoose.Schema({
           price: { type: Number,  }, 
           quantity: { type: Number,  }, 
         },
+        canceled: { type: Boolean, default: false },
       },
     ],
     lunch: [
@@ -25,6 +26,7 @@ const bookingSchema = new mongoose.Schema({
           price: { type: Number,  },
           quantity: { type: Number,  },
         },
+        canceled: { type: Boolean, default: false },
       },
     ],
     snack: [
@@ -35,6 +37,7 @@ const bookingSchema = new mongoose.Schema({
           price: { type: Number,  },
           quantity: { type: Number,  },
         },
+        canceled: { type: Boolean, default: false },
       },
     ],
   },

@@ -9,6 +9,7 @@ const menuItemSchema = new mongoose.Schema({
     large: { type: Number, required: false }, 
   },
   image: { type: String, required: false }, 
+  category: {type:String}
 });
 
 const MenuItem = mongoose.model('MenuItem', menuItemSchema);
